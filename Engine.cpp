@@ -15,9 +15,7 @@ void Engine::run()
 
     cout << "Starting Particle unit tests..." << endl;
 
-    Particle p(m_Window, 4,
-        { (int)m_Window.getSize().x / 2,
-          (int)m_Window.getSize().y / 2 });
+    Particle p(m_Window, 4,{ (int)m_Window.getSize().x / 2,(int)m_Window.getSize().y / 2 });
 
     p.unitTests();
     cout << "Unit tests complete.  Starting engine..." << endl;
@@ -55,6 +53,7 @@ void Engine::input()
             for (int i = 0; i < 5; i++)
             {
                 int numPts = rand() % 26 + 25; // 25-50 vertices
+                // creat and store new particles 
                 Particle newParticle(m_Window, numPts, mousePos);
                 m_particles.push_back(newParticle);
             }
