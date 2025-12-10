@@ -130,12 +130,12 @@ namespace Matrices
     TranslationMatrix::TranslationMatrix(double xShift, double yShift, int nCols)
         :Matrix(2, nCols)
     {
-        for (unsigned int j = 0; j < nCols; j++)
+        for ( int j = 0; j < nCols; j++)
         {
             a[0][j] = xShift;
         }
 
-        for (unsigned int j = 0; j < nCols; j++)
+        for ( int j = 0; j < nCols; j++)
         {
             a[1][j] = yShift;
         }
