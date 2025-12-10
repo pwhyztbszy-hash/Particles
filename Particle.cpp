@@ -1,272 +1,143 @@
-#include "Particle.h"
+#include "Matrices.h"
 
-Particle::Particle(RenderTarget& target, int numPoints, Vector2i mouseClickPosition)
-    : m_A(2, numPoints)
+namespace Matrices
 {
-    m_ttl = TTL;
-    m_numPoints = numPoints;
-    m_radiansPerSec = M_PI * ((float)rand() / (RAND_MAX));
-
-    m_cartesianPlane.setCenter(0, 0);
-    m_cartesianPlane.setSize(target.getSize().x, (-1.0) * target.getSize().y);
-    m_centerCoordinate = target.mapPixelToCoords(mouseClickPosition, m_cartesianPlane); //???
-
-    m_vx = (rand() % 400) + 100;
-    if (rand() % 2 == 0) { m_vx = -1 * m_vx; }
-    m_vy = (rand() % 400) + 100;
-
-    Uint8 r = 0, g = 0, b = 0;
-
-    Color tempColor = // some white or light yellow/orange
+    Matrix::Matrix(int _rows, int _cols)
     {
-        r = 255,
-        g = rand() % 16 + 240,
-        b = rand() % (g - 200 - 10) + 200   //keep b at least 10 under g
-    };
-    m_color1 = tempColor;
+        this->rows = _rows;
+        this->cols = _cols;
 
-    //random highly saturated color
-    vector<Uint8*> rgbPtrV = { &r, &g, &b };
-    int random = rand() % 3;
-    *(rgbPtrV[random]) = 255;  // assign one 255
-    rgbPtrV.erase(rgbPtrV.begin() + random);
+        a.resize(rows);
 
-    random = rand() % 2;
-    *(rgbPtrV[random]) = 0;    // assign one 0
-    rgbPtrV.erase(rgbPtrV.begin() + random);
-
-    *(rgbPtrV[0]) = rand() % 256; // assign one 0-255
-
-    tempColor = { r, g, b };
-    m_color2 = tempColor;
-
-    // generate vertices
-
-    double theta = (rand() % 91) * (M_PI / 180);
-    double dTheta = 2 * M_PI / (numPoints - 1);
-
-    for ( int j = 0; j < numPoints; j++)
-    {
-        double r, dx, dy;
-
-        r = rand() % 61 + 20;
-        dx = r * cos(theta);
-        dy = r * sin(theta);
-
-        m_A(0, j) = m_centerCoordinate.x + dx;
-        m_A(1, j) = m_centerCoordinate.y + dy;
-
-        theta += dTheta;
-    }
-}
-
-void Particle::draw(RenderTarget& target, RenderStates states) const
-{
-    Vector2i tempPixel;
-    
-    VertexArray lines(TriangleFan, m_numPoints + 1);
-    tempPixel = target.mapCoordsToPixel(m_centerCoordinate, m_cartesianPlane); //???
-    Vector2f center = Vector2f(tempPixel.x, tempPixel.y);
-
-    lines[0].position = center;
-    lines[0].color = m_color1;
-
-    for ( int j = 1; j <= m_numPoints; j++)
-    {
-        tempPixel = target.mapCoordsToPixel( Vector2f( m_A(0, j - 1) , m_A(1, j - 1) )  ,  m_cartesianPlane); //???
-        lines[j].position = Vector2f(tempPixel.x, tempPixel.y);
-        lines[j].color = m_color2;
-    }
-
-    target.draw(lines);
-}
-
-void Particle::update(float dt)
-{
-    m_ttl -= dt;
-    rotate(dt * m_radiansPerSec);
-    scale(SCALE);
-
-    float dx, dy;
-
-    dx = m_vx * dt;
-    m_vy -= G * dt;
-    dy = m_vy * dt;
-    translate(dx, dy);
-}
-
-void Particle::translate(double xShift, double yShift)
-{
-    TranslationMatrix T(xShift, yShift, m_numPoints);
-    m_A = T + m_A;
-    m_centerCoordinate.x += xShift;
-    m_centerCoordinate.y += yShift;
-}
-
-void Particle::rotate(double theta)
-{
-    Vector2f temp = m_centerCoordinate;
-
-    translate(-m_centerCoordinate.x, -m_centerCoordinate.y);
-    RotationMatrix R(theta);
-    m_A = R * m_A;
-
-    translate(temp.x, temp.y);
-}
-
-void Particle::scale(double c)
-{
-    Vector2f temp = m_centerCoordinate;
-
-    translate(-m_centerCoordinate.x, -m_centerCoordinate.y);
-    ScalingMatrix S(c);
-    m_A = S * m_A;
-
-    translate(temp.x, temp.y);
-}
-
-
-bool Particle::almostEqual(double a, double b, double eps)
-{
-	return fabs(a - b) < eps;
-}
-
-void Particle::unitTests()
-{
-    int score = 0;
-
-    cout << "Testing RotationMatrix constructor...";
-    double theta = M_PI / 4.0;
-    RotationMatrix r(M_PI / 4);
-    if (r.getRows() == 2 && r.getCols() == 2 && almostEqual(r(0, 0), cos(theta))
-        && almostEqual(r(0, 1), -sin(theta))
-        && almostEqual(r(1, 0), sin(theta))
-        && almostEqual(r(1, 1), cos(theta)))
-    {
-        cout << "Passed.  +1" << endl;
-        score++;
-    }
-    else
-    {
-        cout << "Failed." << endl;
-    }
-
-    cout << "Testing ScalingMatrix constructor...";
-    ScalingMatrix s(1.5);
-    if (s.getRows() == 2 && s.getCols() == 2
-        && almostEqual(s(0, 0), 1.5)
-        && almostEqual(s(0, 1), 0)
-        && almostEqual(s(1, 0), 0)
-        && almostEqual(s(1, 1), 1.5))
-    {
-        cout << "Passed.  +1" << endl;
-        score++;
-    }
-    else
-    {
-        cout << "Failed." << endl;
-    }
-
-    cout << "Testing TranslationMatrix constructor...";
-    TranslationMatrix t(5, -5, 3);
-    if (t.getRows() == 2 && t.getCols() == 3
-        && almostEqual(t(0, 0), 5)
-        && almostEqual(t(1, 0), -5)
-        && almostEqual(t(0, 1), 5)
-        && almostEqual(t(1, 1), -5)
-        && almostEqual(t(0, 2), 5)
-        && almostEqual(t(1, 2), -5))
-    {
-        cout << "Passed.  +1" << endl;
-        score++;
-    }
-    else
-    {
-        cout << "Failed." << endl;
-    }
-
-    
-    cout << "Testing Particles..." << endl;
-    cout << "Testing Particle mapping to Cartesian origin..." << endl;
-    if (m_centerCoordinate.x != 0 || m_centerCoordinate.y != 0)
-    {
-        cout << "Failed.  Expected (0,0).  Received: (" << m_centerCoordinate.x << "," << m_centerCoordinate.y << ")" << endl;
-    }
-    else
-    {
-        cout << "Passed.  +1" << endl;
-        score++;
-    }
-
-    cout << "Applying one rotation of 90 degrees about the origin..." << endl;
-    Matrix initialCoords = m_A;
-    rotate(M_PI / 2.0);
-    bool rotationPassed = true;
-    for (int j = 0; j < initialCoords.getCols(); j++)
-    {
-        if (!almostEqual(m_A(0, j), -initialCoords(1, j)) || !almostEqual(m_A(1, j), initialCoords(0, j)))
+        for (int i = 0; i < rows; i++)
         {
-            cout << "Failed mapping: ";
-            cout << "(" << initialCoords(0, j) << ", " << initialCoords(1, j) << ") ==> (" << m_A(0, j) << ", " << m_A(1, j) << ")" << endl;
-            rotationPassed = false;
+            a[i].resize(cols);
+
+            for (int j = 0; j < cols; j++)
+            {
+                a[i][j] = 0;
+            }
         }
     }
-    if (rotationPassed)
+
+    Matrix operator+(const Matrix& a, const Matrix& b)
     {
-        cout << "Passed.  +1" << endl;
-        score++;
-    }
-    else
-    {
-        cout << "Failed." << endl;
+        if (a.getRows() != b.getRows() || a.getCols() != b.getCols()) throw runtime_error("Error: dimensions must agree");
+
+        Matrix c(a.getRows(), a.getCols());
+
+        for (int i = 0; i < a.getRows(); i++)
+        {
+            for (int j = 0; j < a.getCols(); j++)
+            {
+                c(i,j) = a(i,j) + b(i,j);
+            }
+        }
+
+        return c;
     }
 
-    cout << "Applying a scale of 0.5..." << endl;
-    initialCoords = m_A;
-    scale(0.5);
-    bool scalePassed = true;
-    for (int j = 0; j < initialCoords.getCols(); j++)
+    Matrix operator*(const Matrix& a, const Matrix& b)
     {
-        if (!almostEqual(m_A(0, j), 0.5 * initialCoords(0,j)) || !almostEqual(m_A(1, j), 0.5 * initialCoords(1, j)))
+        if (a.getCols() != b.getRows()) throw runtime_error("Error: dimensions must agree");
+
+        double tempSum;
+        int iMax = a.getRows();
+        int kMax = b.getCols();
+        int jMax = a.getCols();
+        Matrix c(iMax, kMax);
+
+        for (int i = 0; i < iMax; i++)
         {
-            cout << "Failed mapping: ";
-            cout << "(" << initialCoords(0, j) << ", " << initialCoords(1, j) << ") ==> (" << m_A(0, j) << ", " << m_A(1, j) << ")" << endl;
-            scalePassed = false;
+            for (int k = 0; k < kMax; k++)
+            {
+                tempSum = 0;
+
+                for (int j = 0; j < jMax; j++)
+                {
+
+                    tempSum = tempSum + (a(i,j) * b(j,k));
+                }
+                c(i,k) = tempSum;
+            }
+        }
+        return c;
+    }
+
+    bool operator==(const Matrix& a, const Matrix& b)
+    {
+        bool matching = true;
+
+        if (a.getRows() != b.getRows() || a.getCols() != b.getCols())
+        {
+            matching = false;
+        }
+        else {
+
+            for (int i = 0; i < a.getRows(); i++)
+            {
+                for (int j = 0; j < a.getCols(); j++)
+                {
+
+                    if (abs(a(i,j) - b(i,j)) > 0.001)
+                    {
+                        matching = false;
+                        break;
+                    }
+                }
+            }
+        }
+        return matching;
+    }
+
+    bool operator!=(const Matrix& a, const Matrix& b)
+    {
+        return !(a == b);
+    }
+
+    ostream& operator<<(ostream& os, const Matrix& a)
+    {
+        for (int i = 0; i < a.getRows(); i++)
+        {
+            for (int j = 0; j < a.getCols(); j++) 
+            {
+                os << setw(10) << a(i,j) << " ";
+            }
+            os << endl << endl;
+        }
+
+        return os;
+    }
+
+    RotationMatrix::RotationMatrix(double theta)
+        : Matrix(2, 2)
+    {
+        a[0][0] = cos(theta);
+        a[0][1] = -sin(theta);
+        a[1][0] = sin(theta);
+        a[1][1] = cos(theta);
+    }
+
+    ScalingMatrix::ScalingMatrix(double scale)
+        : Matrix(2, 2)
+    {
+        a[0][0] = scale;
+        a[0][1] = 0;
+        a[1][0] = 0;
+        a[1][1] = scale;
+    }
+
+    TranslationMatrix::TranslationMatrix(double xShift, double yShift, int nCols)
+        :Matrix(2, nCols)
+    {
+        for ( int j = 0; j < nCols; j++)
+        {
+            a[0][j] = xShift;
+        }
+
+        for ( int j = 0; j < nCols; j++)
+        {
+            a[1][j] = yShift;
         }
     }
-    if (scalePassed)
-    {
-        cout << "Passed.  +1" << endl;
-        score++;
-    }
-    else
-    {
-        cout << "Failed." << endl;
-    }
-
-    cout << "Applying a translation of (10, 5)..." << endl;
-    initialCoords = m_A;
-    translate(10, 5);
-    bool translatePassed = true;
-    for (int j = 0; j < initialCoords.getCols(); j++)
-    {
-        if (!almostEqual(m_A(0, j), 10 + initialCoords(0, j)) || !almostEqual(m_A(1, j), 5 + initialCoords(1, j)))
-        {
-            cout << "Failed mapping: ";
-            cout << "(" << initialCoords(0, j) << ", " << initialCoords(1, j) << ") ==> (" << m_A(0, j) << ", " << m_A(1, j) << ")" << endl;
-            translatePassed = false;
-        }
-    }
-    if (translatePassed)
-    {
-        cout << "Passed.  +1" << endl;
-        score++;
-    }
-    else
-    {
-        cout << "Failed." << endl;
-    }
-
-    cout << "Score: " << score << " / 7" << endl;
 }
-
