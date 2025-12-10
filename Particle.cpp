@@ -45,7 +45,7 @@ Particle::Particle(RenderTarget& target, int numPoints, Vector2i mouseClickPosit
     double theta = (rand() % 91) * (M_PI / 180);
     double dTheta = 2 * M_PI / (numPoints - 1);
 
-    for (unsigned int j = 0; j < numPoints; j++)
+    for ( int j = 0; j < numPoints; j++)
     {
         double r, dx, dy;
 
@@ -71,7 +71,7 @@ void Particle::draw(RenderTarget& target, RenderStates states) const
     lines[0].position = center;
     lines[0].color = m_color1;
 
-    for (unsigned int j = 1; j <= m_numPoints; j++)
+    for ( int j = 1; j <= m_numPoints; j++)
     {
         tempPixel = target.mapCoordsToPixel( Vector2f( m_A(0, j - 1) , m_A(1, j - 1) )  ,  m_cartesianPlane); //???
         lines[j].position = Vector2f(tempPixel.x, tempPixel.y);
@@ -269,3 +269,4 @@ void Particle::unitTests()
 
     cout << "Score: " << score << " / 7" << endl;
 }
+
