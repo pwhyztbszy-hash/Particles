@@ -50,7 +50,7 @@ void Engine::input()
         {
             Vector2i mousePos = Mouse::getPosition(m_Window);
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 10; i++)
             {
                 int numPts = rand() % 26 + 25; // 25-50 vertices
                 // creat and store new particles 
